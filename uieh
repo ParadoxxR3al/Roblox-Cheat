@@ -9,6 +9,7 @@ do
     local mouse = game:GetService("Players").LocalPlayer:GetMouse();
     local inputService = game:GetService('UserInputService');
     local heartbeat = game:GetService("RunService").Heartbeat;
+
     function dragger.new(frame)
         local s, event = pcall(function()
             return frame.MouseEnter
@@ -48,11 +49,18 @@ local defaults = {
     underline = Color3.fromRGB(0, 255, 140),
     barcolor = Color3.fromRGB(40, 40, 40),
     bgcolor = Color3.fromRGB(30, 30, 30),
-    boxcolor = Color3.fromRGB(45, 45, 45), -- default color for boxes
-    roundedCorners = 8, -- default rounded corner radius
+    boxcolor = Color3.fromRGB(45, 45, 45),
+    roundedCorners = 8,
     shadowColor = Color3.fromRGB(0, 0, 0),
-    shadowTransparency = 0.5,
-    shadowOffset = Vector2.new(4, 4)
+    shadowTransparency = 0.4,
+    shadowOffset = Vector2.new(5, 5),
+    gradientColor1 = Color3.fromRGB(50, 50, 50),
+    gradientColor2 = Color3.fromRGB(30, 30, 30),
+    hoverColor = Color3.fromRGB(255, 255, 255),
+    animationTime = 0.2,
+    toggleOnColor = Color3.fromRGB(0, 255, 140),
+    toggleOffColor = Color3.fromRGB(255, 25, 25),
+    dropdownBackgroundColor = Color3.fromRGB(50, 50, 50),
 }
 
 function library:Create(class, props)
@@ -82,13 +90,14 @@ function library:CreateWindow(options)
     self.windowcount = self.windowcount + 1;
 
     library.gui = library.gui or self:Create("ScreenGui", {Name = "UILibrary", Parent = game:GetService("CoreGui")})
+
     window.frame = self:Create("Frame", {
         Name = options.text;
         Parent = self.gui,
         Active = true,
         BackgroundTransparency = 0,
-        Size = UDim2.new(0, 190, 0, 30),
-        Position = UDim2.new(0, (15 + ((200 * self.windowcount) - 200)), 0, 15),
+        Size = UDim2.new(0, 200, 0, 40),
+        Position = UDim2.new(0, (15 + ((220 * self.windowcount) - 220)), 0, 15),
         BackgroundColor3 = options.barcolor,
         BorderSizePixel = 0;
         ClipsDescendants = true;
@@ -128,6 +137,12 @@ function library:CreateWindow(options)
         Parent = window.background
     })
 
+    -- Add Gradient Background
+    self:Create("UIGradient", {
+        Color = ColorSequence.new{ColorSequenceKeypoint.new(0, options.gradientColor1), ColorSequenceKeypoint.new(1, options.gradientColor2)},
+        Parent = window.background
+    })
+
     window.container = self:Create('Frame', {
         Name = 'Container';
         Parent = window.frame,
@@ -159,8 +174,8 @@ function library:CreateWindow(options)
 
     self:Create("Frame", {
         Name = 'Underline';
-        Size = UDim2.new(1, 0, 0, 1),
-        Position = UDim2.new(0, 0, 1, -1),
+        Size = UDim2.new(1, 0, 0, 2),
+        Position = UDim2.new(0, 0, 1, -2),
         BorderSizePixel = 0;
         BackgroundColor3 = options.underline;
         Parent = window.frame
@@ -170,12 +185,12 @@ function library:CreateWindow(options)
         Name = 'Toggle';
         ZIndex = 2,
         BackgroundTransparency = 1;
-        Position = UDim2.new(1, -25, 0, 0),
-        Size = UDim2.new(0, 25, 1, 0),
+        Position = UDim2.new(1, -30, 0, 0),
+        Size = UDim2.new(0, 30, 1, 0),
         Text = "-",
-        TextSize = 17,
+        TextSize = 20,
         TextColor3 = options.txtcolor,
-        Font = Enum.Font.FredokaOne;
+        Font = Enum.Font.GothamBlack;
         Parent = window.frame,
     });
 
@@ -194,10 +209,9 @@ function library:CreateWindow(options)
         BackgroundTransparency = 1;
         BorderSizePixel = 0;
         TextColor3 = options.txtcolor,
-        TextColor3 = (options.bartextcolor or Color3.fromRGB(255, 255, 255));
-        TextSize = 17,
-        Font = Enum.Font.FredokaOne;
-        Text = options.text or "window",
+        TextSize = 20,
+        Font = Enum.Font.GothamBlack;
+        Text = options.text or "Window",
         Name = "Window",
         Parent = window.frame,
     })
@@ -239,36 +253,35 @@ function library:CreateWindow(options)
             TextColor3 = Color3.fromRGB(255, 255, 255);
             TextXAlignment = Enum.TextXAlignment.Left;
             LayoutOrder = self.Count;
-            TextSize = 14,
-            Font = Enum.Font.FredokaOne,
+            TextSize = 16,
+            Font = Enum.Font.Gotham,
             Parent = self.container;
         })
 
         local button = library:Create("TextButton", {
             Text = "OFF",
-            TextColor3 = Color3.fromRGB(255, 25, 25),
+            TextColor3 = options.toggleOffColor,
             BackgroundTransparency = 1;
-            Position = UDim2.new(1, -25, 0, 0),
-            Size = UDim2.new(0, 25, 1, 0),
-            TextSize = 17,
-            Font = Enum.Font.FredokaOne,
+            Position = UDim2.new(1, -30, 0, 0),
+            Size = UDim2.new(0, 30, 1, 0),
+            TextSize = 16,
+            Font = Enum.Font.Gotham,
             Parent = label;
         })
 
         button.MouseButton1Click:connect(function()
             self.toggles[text] = (not self.toggles[text])
-            button.TextColor3 = (self.toggles[text] and Color3.fromRGB(0, 255, 140) or Color3.fromRGB(255, 25, 25))
-            button.Text =(self.toggles[text] and "ON" or "OFF")
-
+            button.TextColor3 = (self.toggles[text] and options.toggleOnColor or options.toggleOffColor)
+            button.Text = (self.toggles[text] and "ON" or "OFF")
             callback(self.toggles[text])
         end)
 
         -- Add Hover Effect
         button.MouseEnter:connect(function()
-            button.TextColor3 = Color3.fromRGB(255, 255, 255)
+            button.TextColor3 = options.hoverColor
         end)
         button.MouseLeave:connect(function()
-            button.TextColor3 = (self.toggles[text] and Color3.fromRGB(0, 255, 140) or Color3.fromRGB(255, 25, 25))
+            button.TextColor3 = (self.toggles[text] and options.toggleOnColor or options.toggleOffColor)
         end)
 
         self:Resize()
@@ -281,14 +294,14 @@ function library:CreateWindow(options)
 
         local box = library:Create("TextBox", {
             PlaceholderText = text,
-            Size = UDim2.new(1, -10, 0, 20);
+            Size = UDim2.new(1, -10, 0, 25);
             BackgroundTransparency = 0.75;
             BackgroundColor3 = options.boxcolor,
             TextColor3 = Color3.fromRGB(255, 255, 255);
             TextXAlignment = Enum.TextXAlignment.Center;
-            TextSize = 14,
+            TextSize = 16,
             Text = "",
-            Font = Enum.Font.FredokaOne,
+            Font = Enum.Font.Gotham,
             LayoutOrder = self.Count;
             BorderSizePixel = 0;
             Parent = self.container;
@@ -314,24 +327,31 @@ function library:CreateWindow(options)
         callback = callback or function() end
         local button = library:Create("TextButton", {
             Text =  text,
-            Size = UDim2.new(1, -10, 0, 20);
-            BackgroundTransparency = 1;
+            Size = UDim2.new(1, -10, 0, 25);
+            BackgroundTransparency = 0.5;
+            BackgroundColor3 = options.barcolor,
             TextColor3 = Color3.fromRGB(255, 255, 255);
-            TextXAlignment = Enum.TextXAlignment.Left;
-            TextSize = 14,
-            Font = Enum.Font.FredokaOne,
+            TextXAlignment = Enum.TextXAlignment.Center;
+            TextSize = 16,
+            Font = Enum.Font.Gotham,
             LayoutOrder = self.Count;
             Parent = self.container;
+        })
+
+        -- Apply Rounded Corners to Button
+        self:Create("UICorner", {
+            CornerRadius = UDim.new(0, options.roundedCorners),
+            Parent = button
         })
 
         button.MouseButton1Click:connect(callback)
 
         -- Add Hover Effect
         button.MouseEnter:connect(function()
-            button.TextColor3 = Color3.fromRGB(0, 255, 255)
+            button.BackgroundTransparency = 0.3
         end)
         button.MouseLeave:connect(function()
-            button.TextColor3 = Color3.fromRGB(255, 255, 255)
+            button.BackgroundTransparency = 0.5
         end)
 
         self:Resize()
@@ -341,23 +361,23 @@ function library:CreateWindow(options)
     function window:AddLabel(text)
         self.count = self.count + 1;
 
-        local tSize = game:GetService('TextService'):GetTextSize(text, 16, Enum.Font.FredokaOne, Vector2.new(math.huge, math.huge))
+        local tSize = game:GetService('TextService'):GetTextSize(text, 16, Enum.Font.Gotham, Vector2.new(math.huge, math.huge))
 
-        local button = library:Create("TextLabel", {
+        local label = library:Create("TextLabel", {
             Text =  text,
             Size = UDim2.new(1, -10, 0, tSize.Y + 5);
             TextScaled = false;
             BackgroundTransparency = 1;
             TextColor3 = Color3.fromRGB(255, 255, 255);
             TextXAlignment = Enum.TextXAlignment.Left;
-            TextSize = 14,
-            Font = Enum.Font.FredokaOne,
+            TextSize = 16,
+            Font = Enum.Font.Gotham,
             LayoutOrder = self.Count;
             Parent = self.container;
         })
 
         self:Resize()
-        return button
+        return label
     end
 
     function window:AddDropdown(options, callback)
@@ -366,14 +386,14 @@ function library:CreateWindow(options)
 
         callback = callback or function() end
         local dropdown = library:Create("TextLabel", {
-            Size = UDim2.new(1, -10, 0, 20);
+            Size = UDim2.new(1, -10, 0, 25);
             BackgroundTransparency = 0.75;
-            BackgroundColor3 = options.boxcolor,
+            BackgroundColor3 = options.dropdownBackgroundColor,
             TextColor3 = Color3.fromRGB(255, 255, 255);
             TextXAlignment = Enum.TextXAlignment.Center;
-            TextSize = 14,
+            TextSize = 16,
             Text = default,
-            Font = Enum.Font.FredokaOne,
+            Font = Enum.Font.Gotham,
             BorderSizePixel = 0;
             LayoutOrder = self.Count;
             Parent = self.container;
@@ -427,12 +447,17 @@ function library:CreateWindow(options)
 
             frame = library:Create('Frame', {
                 Position = UDim2.new(0, 0, 1, 0);
-                BackgroundColor3 = Color3.fromRGB(0, 255, 255);
-                Size = UDim2.new(0, dropdown.AbsoluteSize.X, 0, (count(options) * 21));
+                BackgroundColor3 = options.dropdownBackgroundColor;
+                Size = UDim2.new(0, dropdown.AbsoluteSize.X, 0, (count(options) * 25));
                 BorderSizePixel = 0;
                 Parent = dropdown;
                 ClipsDescendants = true;
                 ZIndex = 2;
+            })
+
+            self:Create("UICorner", {
+                CornerRadius = UDim.new(0, options.roundedCorners),
+                Parent = frame
             })
 
             library:Create('UIListLayout', {
@@ -443,12 +468,12 @@ function library:CreateWindow(options)
             for i, option in next, options do
                 local selection = library:Create('TextButton', {
                     Text = option;
-                    BackgroundColor3 = Color3.fromRGB(40, 40, 40);
+                    BackgroundColor3 = Color3.fromRGB(60, 60, 60);
                     TextColor3 = Color3.fromRGB(255, 255, 255);
                     BorderSizePixel = 0;
-                    TextSize = 14;
-                    Font = Enum.Font.FredokaOne;
-                    Size = UDim2.new(1, 0, 0, 21);
+                    TextSize = 16;
+                    Font = Enum.Font.Gotham;
+                    Size = UDim2.new(1, 0, 0, 25);
                     Parent = frame;
                     ZIndex = 2;
                 })
